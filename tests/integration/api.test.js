@@ -4,6 +4,8 @@ const app = require("../../src/app");
 const sequelize = require("../../src/config/database");
 
 describe("API integration tests", () => {
+  let candidateId;
+
   beforeAll(async () => {
     await sequelize.authenticate();
   });
@@ -27,6 +29,8 @@ describe("API integration tests", () => {
       expect(response.statusCode).toBe(201);
       expect(response.body).toHaveProperty("id");
       expect(response.body.name).toBe("John Doe");
+
+      candidateId = response.body.id;
     });
 
     it("should reject invalid candidate data", async () => {
@@ -98,6 +102,57 @@ describe("API integration tests", () => {
           },
           remoteAllowed: false
         });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toBe("Validation failed");
+    });
+  });
+
+  describe("GET /candidates/:candidateId/recommendations", () => {
+    it("should return recommendations for a candidate", async () => {
+      const response = await request(app).get(
+        `/candidates/${candidateId}/recommendations`
+      );
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.candidateId).toBe(candidateId);
+      expect(response.body.recommendations).toBeInstanceOf(Array);
+    });
+
+    it("should respect the limit query parameter", async () => {
+      const response = await request(app).get(
+        `/candidates/${candidateId}/recommendations?limit=1`
+      );
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.recommendations.length).toBeLessThanOrEqual(1);
+    });
+
+    it("should reject an invalid candidate ID", async () => {
+      const response = await request(app).get(
+        "/candidates/not-a-uuid/recommendations"
+      );
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toBe("Validation failed");
+    });
+
+    it("should return 404 for a non-existent candidate", async () => {
+      const nonExistentCandidateId =
+        "00000000-0000-0000-0000-000000000000";
+
+      const response = await request(app).get(
+        `/candidates/${nonExistentCandidateId}/recommendations`
+      );
+
+      expect(response.statusCode).toBe(404);
+      expect(response.body.message).toBe("Candidate not found");
+    });
+
+    it("should reject an invalid limit", async () => {
+      const response = await request(app).get(
+        `/candidates/${candidateId}/recommendations?limit=0`
+      );
 
       expect(response.statusCode).toBe(400);
       expect(response.body.message).toBe("Validation failed");
