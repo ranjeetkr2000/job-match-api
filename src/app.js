@@ -2,6 +2,7 @@ const express = require("express");
 
 const candidateRoutes = require("./routes/candidate.routes");
 const jobRoutes = require("./routes/job.routes");
+const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
@@ -15,5 +16,7 @@ app.get("/health", (req, res) => {
     status: "ok"
   });
 });
+
+app.use(errorHandler);
 
 module.exports = app;
