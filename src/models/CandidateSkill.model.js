@@ -1,25 +1,31 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 
-const Skill = sequelize.define(
-  "Skill",
+const CandidateSkill = sequelize.define(
+  "CandidateSkill",
   {
-    id: {
+    candidateId: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
+      references: {
+        model: "candidates",
+        key: "id"
+      }
     },
 
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
+    skillId: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      references: {
+        model: "skills",
+        key: "id"
+      }
     }
   },
   {
-    tableName: "skills",
-    timestamps: true
+    tableName: "candidate_skills",
+    timestamps: false
   }
 );
 
-module.exports = Skill;
+module.exports = CandidateSkill;
