@@ -229,4 +229,10 @@ Potential improvements would include:
 
 AI tools were used during development for project setup, implementation guidance, debugging, and test-cases.
 
-AI-generated suggestions were reviewed and adapted to the project's requirements. The scoring model, weights, hard-filter behavior, experience penalty, and API architecture were deliberately chosen and adjusted rather than accepted blindly.
+AI-generated suggestions were reviewed and tested rather than accepted blindly. During development, I identified and corrected several issues:
+
+* **Candidate creation:** An initial implementation produced a database error where `skills.name` was NULL. Reviewing the generated code and database behavior revealed an incorrect Candidate/Skill model definition, which was then corrected.
+* **Test environment:** Integration tests initially failed because environment variables were loaded only in `server.js`. Since tests import the database configuration directly, the environment configuration was also loaded from the database configuration.
+* **Recommendation scalability:** The initial recommendation implementation fetched all jobs before running the scoring logic. I identified this as a potential performance bottleneck and changed the implementation to perform the must-have skill filtering at the database level before application-level scoring. For even higher scalability as the dataset grows, this architecture will require pushing the weighted scoring math entirely into the database query or offloading the recommendation logic completely to a dedicated search engine.
+
+These changes were made after reviewing, testing, and challenging the AI-generated implementation. The final architecture and scoring approach were adjusted based on the project's requirements and practical considerations.
