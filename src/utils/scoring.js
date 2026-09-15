@@ -1,8 +1,12 @@
 const WEIGHTS = {
-  skills: 50,
+  skills: {
+    MUST_HAVE: 35,
+    NICE_TO_HAVE: 15
+  },
   experience: 20,
   location: 15,
-  salary: 15
+  salary: 15,
+  remoteAllowed: 10
 };
 
 function calculateSkillScore(candidateSkills, jobSkills) {
@@ -37,18 +41,18 @@ function calculateSkillScore(candidateSkills, jobSkills) {
 
   const niceToHaveScore =
     niceToHaveSkills.length === 0
-      ? 15
+      ? WEIGHTS.skills.NICE_TO_HAVE
       : (niceToHaveSkills.filter((skill) =>
           candidateSkillNames.has(
             skill.name.trim().toLowerCase()
           )
         ).length /
           niceToHaveSkills.length) *
-        15;
+        WEIGHTS.skills.NICE_TO_HAVE;
 
   return {
     eligible: true,
-    score: 35 + niceToHaveScore
+    score: WEIGHTS.skills.MUST_HAVE + niceToHaveScore
   };
 }
 
@@ -83,7 +87,7 @@ function calculateLocationScore(
   }
 
   if (remoteAllowed) {
-    return 10;
+    return WEIGHTS.remoteAllowed;
   }
 
   return 0;

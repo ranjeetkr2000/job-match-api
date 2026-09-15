@@ -6,12 +6,11 @@ const {
   calculateExperienceScore,
   calculateLocationScore,
   calculateSalaryScore,
-  calculateOverallScore
+  calculateOverallScore,
 } = require("../utils/scoring");
 
 async function getRecommendations(candidateId, limit) {
-  const candidate =
-    await candidateRepository.findById(candidateId);
+  const candidate = await candidateRepository.findById(candidateId);
 
   if (!candidate) {
     const error = new Error("Candidate not found");
@@ -19,46 +18,35 @@ async function getRecommendations(candidateId, limit) {
     throw error;
   }
 
-  const jobs = await jobRepository.findAll();
+  const jobs = await jobRepository.findEligibleJobs(candidateId);
 
   const recommendations = [];
 
   for (const job of jobs) {
-    const skillScore = calculateSkillScore(
-      candidate.skills,
-      job.skills
+    const skillScore = calculateSkillScore(candidate.skills, job.skills);
+
+    const experienceScore = calculateExperienceScore(
+      Number(candidate.yearsOfExperience),
+      Number(job.minYearsExperience),
     );
 
-    // Missing a must-have skill = completely excluded.
-    if (!skillScore.eligible) {
-      continue;
-    }
+    const locationScore = calculateLocationScore(
+      candidate.location,
+      job.location,
+      job.remoteAllowed,
+    );
 
-    const experienceScore =
-      calculateExperienceScore(
-        Number(candidate.yearsOfExperience),
-        Number(job.minYearsExperience)
-      );
-
-    const locationScore =
-      calculateLocationScore(
-        candidate.location,
-        job.location,
-        job.remoteAllowed
-      );
-
-    const salaryScore =
-      calculateSalaryScore(
-        Number(candidate.expectedSalary),
-        Number(job.salaryMin),
-        Number(job.salaryMax)
-      );
+    const salaryScore = calculateSalaryScore(
+      Number(candidate.expectedSalary),
+      Number(job.salaryMin),
+      Number(job.salaryMax),
+    );
 
     const scores = {
       skills: skillScore.score,
       experience: experienceScore,
       location: locationScore,
-      salary: salaryScore
+      salary: salaryScore,
     };
 
     recommendations.push({
@@ -69,18 +57,16 @@ async function getRecommendations(candidateId, limit) {
         skills: `${Math.round(scores.skills)}/50`,
         experience: `${Math.round(scores.experience)}/20`,
         location: `${Math.round(scores.location)}/15`,
-        salary: `${Math.round(scores.salary)}/15`
-      }
+        salary: `${Math.round(scores.salary)}/15`,
+      },
     });
   }
 
-  recommendations.sort(
-    (a, b) => b.score - a.score
-  );
+  recommendations.sort((a, b) => b.score - a.score);
 
   return recommendations.slice(0, limit);
 }
 
 module.exports = {
-  getRecommendations
+  getRecommendations,
 };

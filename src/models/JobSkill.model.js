@@ -6,14 +6,20 @@ const JobSkill = sequelize.define(
   {
     jobId: {
       type: DataTypes.UUID,
-      primaryKey: true
+      primaryKey: true,
+      references: {
+        model: "jobs",
+        key: "id"
+      }
     },
-
     skillId: {
       type: DataTypes.UUID,
-      primaryKey: true
+      primaryKey: true,
+      references: {
+        model: "skills",
+        key: "id"
+      }
     },
-
     type: {
       type: DataTypes.ENUM("MUST_HAVE", "NICE_TO_HAVE"),
       allowNull: false
@@ -21,7 +27,13 @@ const JobSkill = sequelize.define(
   },
   {
     tableName: "job_skills",
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      {
+        name: "idx_job_skills_cover",
+        fields: ["jobId", "type", "skillId"] 
+      }
+    ]
   }
 );
 
