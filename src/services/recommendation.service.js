@@ -1,15 +1,7 @@
 const candidateRepository = require("../repositories/candidate.repository");
 const jobRepository = require("../repositories/job.repository");
 
-const {
-  calculateSkillScore,
-  calculateExperienceScore,
-  calculateLocationScore,
-  calculateSalaryScore,
-  calculateOverallScore,
-} = require("../utils/scoring");
-
-async function getRecommendations(candidateId, limit) {
+async function getRecommendations(candidateId, limit = 20) {
   const candidate = await candidateRepository.findById(candidateId);
 
   if (!candidate) {
@@ -18,53 +10,26 @@ async function getRecommendations(candidateId, limit) {
     throw error;
   }
 
-  const jobs = await jobRepository.findEligibleJobs(candidateId);
+  // Pass the entire candidate object so the DB has all comparison data
+  const jobs = await jobRepository.findEligibleJobs(candidate, limit);
 
-  const recommendations = [];
-
-  for (const job of jobs) {
-    const skillScore = calculateSkillScore(candidate.skills, job.skills);
-
-    const experienceScore = calculateExperienceScore(
-      Number(candidate.yearsOfExperience),
-      Number(job.minYearsExperience),
-    );
-
-    const locationScore = calculateLocationScore(
-      candidate.location,
-      job.location,
-      job.remoteAllowed,
-    );
-
-    const salaryScore = calculateSalaryScore(
-      Number(candidate.expectedSalary),
-      Number(job.salaryMin),
-      Number(job.salaryMax),
-    );
-
-    const scores = {
-      skills: skillScore.score,
-      experience: experienceScore,
-      location: locationScore,
-      salary: salaryScore,
-    };
-
-    recommendations.push({
-      jobId: job.id,
-      title: job.title,
-      score: calculateOverallScore(scores),
+  // Map the Sequelize results into the required JSON breakdown
+  return jobs.map((job) => {
+    // Convert to plain JSON to easily access the generated literal columns
+    const data = job.toJSON(); 
+    
+    return {
+      jobId: data.id,
+      title: data.title,
+      score: Math.round(data.totalScore),
       breakdown: {
-        skills: `${Math.round(scores.skills)}/50`,
-        experience: `${Math.round(scores.experience)}/20`,
-        location: `${Math.round(scores.location)}/15`,
-        salary: `${Math.round(scores.salary)}/15`,
+        skills: `${Math.round(data.skillScore)}/50`,
+        experience: `${Math.round(data.experienceScore)}/20`,
+        location: `${Math.round(data.locationScore)}/15`,
+        salary: `${Math.round(data.salaryScore)}/15`,
       },
-    });
-  }
-
-  recommendations.sort((a, b) => b.score - a.score);
-
-  return recommendations.slice(0, limit);
+    };
+  });
 }
 
 module.exports = {
